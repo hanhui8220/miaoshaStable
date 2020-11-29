@@ -24,7 +24,7 @@
 	jQuery(document).ready(function(){
 			$.ajax({
 				type:"GET",
-				url:"http://"+g_host+/item/list",
+				url:"http://"+g_host+"/item/list",
 				xhrFields:{withCredentials:true},
 				success:function(data){
 					if(data.status == "success"){

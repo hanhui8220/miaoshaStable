@@ -51,6 +51,7 @@ public class ItemController extends BaseController {
     @RequestMapping(value = "/get",method = {RequestMethod.GET})
     @ResponseBody
     public CommonReturnType getItem(@RequestParam(name = "id")Integer id){
+        System.out.println("查询商品详情");
         ItemModel itemModel = itemService.getItemById(id);
 
         ItemVO itemVO = convertVOFromModel(itemModel);
@@ -64,7 +65,7 @@ public class ItemController extends BaseController {
     @ResponseBody
     public CommonReturnType listItem(){
         List<ItemModel> itemModelList = itemService.listItem();
-
+        System.out.println("查询商品列表页");
         //使用stream apiJ将list内的itemModel转化为ITEMVO;
         List<ItemVO> itemVOList =  itemModelList.stream().map(itemModel -> {
             ItemVO itemVO = this.convertVOFromModel(itemModel);
