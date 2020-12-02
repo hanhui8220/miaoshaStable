@@ -38,9 +38,13 @@ public class RedisConfig {
         // 自定义DateTime  日期类型的序列化器
         ObjectMapper objectMapper = new ObjectMapper();
         SimpleModule simpleModule = new SimpleModule();
+        // 使用者 自定义的序列化器
         simpleModule.addSerializer(DateTime.class,new  CustomDateSerializer());
         simpleModule.addDeserializer(DateTime.class,new CustomDateDeSerializer());
+        // 注册进去
         objectMapper.registerModule(simpleModule);
+        // 加上这行配置  redis value 会显示类的信息
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
         jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
         redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
         return redisTemplate;
