@@ -41,7 +41,7 @@ public class OrderController extends BaseController {
             throw new BusinessException(EmBusinessError.USER_NOT_LOGIN,"用户还未登陆，不能下单");
         }
         // 从redis中获取 用户登录对象
-        UserModel userModel = (UserModel)redisTemplate.opsForValue().get("token");
+        UserModel userModel = (UserModel)redisTemplate.opsForValue().get(token);
         if(userModel == null){
             throw new BusinessException(EmBusinessError.USER_NOT_LOGIN,"用户信息已过期，请重新登录");
         }
