@@ -76,6 +76,12 @@
       <artifactId>spring-session-data-redis</artifactId>
       <version>2.0.5.RELEASE</version>
     </dependency>
+    <!-- 本地缓存使用-->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>18.0</version>
+    </dependency>
   </dependencies>
 
   <build>
