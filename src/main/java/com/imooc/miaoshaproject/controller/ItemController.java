@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import com.imooc.miaoshaproject.controller.viewobject.ItemVO;
 import com.imooc.miaoshaproject.error.BusinessException;
 import com.imooc.miaoshaproject.response.CommonReturnType;
+import com.imooc.miaoshaproject.service.CommonCache;
 import com.imooc.miaoshaproject.service.model.ItemModel;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.BeanUtils;
@@ -29,6 +30,9 @@ public class ItemController extends BaseController {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private CommonCache commonCache;
 
     //创建商品的controller
     @RequestMapping(value = "/create",method = {RequestMethod.POST},consumes={CONTENT_TYPE_FORMED})
@@ -57,13 +61,22 @@ public class ItemController extends BaseController {
     @ResponseBody
     public CommonReturnType getItem(@RequestParam(name = "id")Integer id){
         System.out.println("查询商品详情");
-        // 从 redis中获取 缓存
-        ItemModel itemModel = (ItemModel)redisTemplate.opsForValue().get("item_"+id);
-        if(itemModel == null) {
-            itemModel = itemService.getItemById(id);
-            //  将数据放到 redis缓存中，并设置超时时间
-            redisTemplate.opsForValue().set("item_"+id,itemModel);
-            redisTemplate.expire("item_"+id,10, TimeUnit.MINUTES);
+
+        // 先从本地缓存取
+        ItemModel itemModel = (ItemModel)commonCache.getFromCommonCache("item_"+id);
+        if(itemModel == null){
+            System.out.println("本地缓存没有取到数据");
+            // 从 redis中获取 缓存
+            itemModel = (ItemModel)redisTemplate.opsForValue().get("item_"+id);
+            if(itemModel == null) {
+                System.out.println("redis缓存没有取到数据");
+                itemModel = itemService.getItemById(id);
+                //  将数据放到 redis缓存中，并设置超时时间
+                redisTemplate.opsForValue().set("item_"+id,itemModel);
+                redisTemplate.expire("item_"+id,10, TimeUnit.MINUTES);
+                // 放入本地缓存
+                commonCache.putCommonCache("item_"+id,itemModel);
+            }
         }
         ItemVO itemVO = convertVOFromModel(itemModel);
 
