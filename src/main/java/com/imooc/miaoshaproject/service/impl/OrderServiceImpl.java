@@ -39,7 +39,8 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderDOMapper orderDOMapper;
 
-
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
     @Transactional

@@ -131,8 +131,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public boolean decreaseStock(Integer itemId, Integer amount) throws BusinessException {
-        int affectedRow =  itemStockDOMapper.decreaseStock(itemId,amount);
-        if(affectedRow > 0){
+        //int affectedRow =  itemStockDOMapper.decreaseStock(itemId,amount);
+        //  改为从redis 中 减库存
+        Long increment = redisTemplate.opsForValue().increment("item_stock_" + itemId, -1 * amount);
+        if(increment >= 0){
             //更新库存成功
             return true;
         }else{

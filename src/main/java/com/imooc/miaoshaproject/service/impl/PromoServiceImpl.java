@@ -2,11 +2,14 @@ package com.imooc.miaoshaproject.service.impl;
 
 import com.imooc.miaoshaproject.dao.PromoDOMapper;
 import com.imooc.miaoshaproject.dataobject.PromoDO;
+import com.imooc.miaoshaproject.service.ItemService;
 import com.imooc.miaoshaproject.service.PromoService;
+import com.imooc.miaoshaproject.service.model.ItemModel;
 import com.imooc.miaoshaproject.service.model.PromoModel;
 import org.joda.time.DateTime;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,6 +20,23 @@ public class PromoServiceImpl implements PromoService {
 
     @Autowired
     private PromoDOMapper promoDOMapper;
+
+    @Autowired
+    private ItemService itemService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    // 商品  发布  将商品信息 存放在redis中
+    @Override
+    public void publishPromo(Integer promoId) {
+        PromoDO promoDO = promoDOMapper.selectByPrimaryKey(promoId);
+        if(promoDO == null || promoDO.getItemId().intValue() == 0){
+            return;
+        }
+        ItemModel itemModel = itemService.getItemById(promoDO.getItemId());
+        redisTemplate.opsForValue().set("item_stock_"+itemModel.getId(),itemModel.getStock());
+    }
 
     @Override
     public PromoModel getPromoByItemId(Integer itemId) {
