@@ -6,6 +6,8 @@ import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.client.producer.TransactionMQProducer;
+import org.apache.rocketmq.client.producer.TransactionSendResult;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,12 @@ public class MqProcuder {
 
     private DefaultMQProducer defaultMQProducer;
 
-    @Value("mq.namerserver.addr")
+    private TransactionMQProducer transactionMQProducer;
+
+    @Value("${mq.namerserver.addr}")
     private String mqAddr;
 
-    @Value("mq.topicname")
+    @Value("${mq.topicname}")
     private String mqTopicName;
 
 
@@ -36,17 +40,36 @@ public class MqProcuder {
         defaultMQProducer = new DefaultMQProducer("stock_procuder_group");
         defaultMQProducer.setNamesrvAddr(mqAddr);
         defaultMQProducer.start();
+
+        transactionMQProducer = new TransactionMQProducer("stock_procuder_group");
+        transactionMQProducer.setNamesrvAddr(mqAddr);
+        transactionMQProducer.start();
     }
 
+    //  事务型  发送消息
+    public boolean transactionAsyncDecreaseStock(Integer itemId,Integer amount){
+        Map<String,Object> map = new HashMap<>();
+        map.put("itemId",itemId);
+        map.put("amount",amount);
+        Message message = new Message(mqTopicName,"increase",
+                JSON.toJSON(map).toString().getBytes(Charset.forName("UTF-8")));
+        TransactionSendResult sendResult = transactionMQProducer.sendMessageInTransaction(message);
+
+
+        System.out.println("mq 发送消息完毕------------------------");
+
+        return true;
+    }
 
     public boolean asyncDecreaseStock(Integer itemId,Integer amount){
         Map<String,Object> map = new HashMap<>();
         map.put("itemId",itemId);
         map.put("amount",amount);
         Message message = new Message(mqTopicName,"increase",
-                JSON.toJSON(map.toString().getBytes(Charset.forName("UTF-8")));
+                JSON.toJSON(map).toString().getBytes(Charset.forName("UTF-8")));
         try {
             SendResult sendResult = defaultMQProducer.send(message);
+            System.out.println("mq 发送消息完毕------------------------");
         } catch (MQClientException e) {
             e.printStackTrace();
             return false;

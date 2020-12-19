@@ -25,4 +25,8 @@ public interface ItemService {
     //商品销量增加
     void increaseSales(Integer itemId,Integer amount)throws BusinessException;
 
+
+    boolean increaseStock(Integer itemId, Integer amount) throws BusinessException;
+
+    public boolean asyncDecreaseStock(Integer itemId, Integer amount);
 }
