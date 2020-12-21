@@ -19,6 +19,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -31,13 +32,13 @@ public class ItemServiceImpl implements ItemService {
     @Autowired
     private ValidatorImpl validator;
 
-    @Autowired
+    @Resource
     private ItemDOMapper itemDOMapper;
 
     @Autowired
     private PromoService promoService;
 
-    @Autowired
+    @Resource
     private ItemStockDOMapper itemStockDOMapper;
 
     @Autowired
@@ -165,8 +166,10 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public boolean asyncDecreaseStock(Integer itemId, Integer amount) {
-        boolean reslut = mqProcuder.asyncDecreaseStock(itemId, amount);
-        return reslut;
+//        boolean reslut = mqProcuder.asyncDecreaseStock(itemId, amount);
+//        boolean reslut = mqProcuder.transactionAsyncDecreaseStock(itemId, amount);
+//        return reslut;
+        return true;
     }
 
     @Override

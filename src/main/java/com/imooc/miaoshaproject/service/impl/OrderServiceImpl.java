@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -38,7 +39,7 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private UserService userService;
 
-    @Autowired
+    @Resource
     private OrderDOMapper orderDOMapper;
 
     @Autowired
@@ -104,17 +105,17 @@ public class OrderServiceImpl implements OrderService {
         itemService.increaseSales(itemId,amount);
 
         // 异步更新 数据库库存，等待最近的一次事务提交后才 进行,等待订单提交后才进行
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
-            @Override
-            public void afterCommit() {
-                boolean mqResult = itemService.asyncDecreaseStock(itemId, amount);
-                if(!mqResult){
-                    // redis  缓存 加 回原来
-//                    itemService.increaseStock(itemId, amount);
-//                    throw new BusinessException(EmBusinessError.MQ_SEND_FAIL);
-                }
-            }
-        });
+//        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+//            @Override
+//            public void afterCommit() {
+//                boolean mqResult = itemService.asyncDecreaseStock(itemId, amount);
+//                if(!mqResult){
+//                    // redis  缓存 加 回原来
+////                    itemService.increaseStock(itemId, amount);
+////                    throw new BusinessException(EmBusinessError.MQ_SEND_FAIL);
+//                }
+//            }
+//        });
 
         //4.返回前端
         return orderModel;

@@ -1,5 +1,6 @@
 package com.imooc.miaoshaproject.controller;
 
+import com.imooc.miaoshaproject.mq.MqProcuder;
 import com.imooc.miaoshaproject.service.OrderService;
 import com.imooc.miaoshaproject.error.BusinessException;
 import com.imooc.miaoshaproject.error.EmBusinessError;
@@ -29,6 +30,9 @@ public class OrderController extends BaseController {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private MqProcuder mqProcuder;
+
     //封装下单请求
     @RequestMapping(value = "/createorder",method = {RequestMethod.POST},consumes={CONTENT_TYPE_FORMED})
     @ResponseBody
@@ -55,6 +59,10 @@ public class OrderController extends BaseController {
 
         OrderModel orderModel = orderService.createOrder(userModel.getId(),itemId,promoId,amount);
 
+        //  等到 订单 完成后再  减库存
+        if(!mqProcuder.transactionAsyncDecreaseStock(userModel.getId(),itemId,promoId,amount)){
+            throw new BusinessException(EmBusinessError.UNKNOWN_ERROR,"下单失败");
+        }
         return CommonReturnType.create(null);
     }
 }
