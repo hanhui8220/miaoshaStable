@@ -29,4 +29,6 @@ public interface ItemService {
     boolean increaseStock(Integer itemId, Integer amount) throws BusinessException;
 
     public boolean asyncDecreaseStock(Integer itemId, Integer amount);
+
+    String initStockLog(Integer itemId, Integer amount);
 }

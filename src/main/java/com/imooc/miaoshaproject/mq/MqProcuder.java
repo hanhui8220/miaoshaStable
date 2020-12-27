@@ -2,6 +2,8 @@ package com.imooc.miaoshaproject.mq;
 
 
 import com.alibaba.fastjson.JSON;
+import com.imooc.miaoshaproject.dao.StockLogDOMapper;
+import com.imooc.miaoshaproject.dataobject.StockLogDO;
 import com.imooc.miaoshaproject.error.BusinessException;
 import com.imooc.miaoshaproject.service.OrderService;
 import com.imooc.miaoshaproject.service.model.OrderModel;
@@ -17,6 +19,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +39,9 @@ public class MqProcuder {
 
     @Autowired
     private OrderService orderService;
+
+    @Resource
+    private StockLogDOMapper stockLogDOMapper;
 
     @PostConstruct
     public void init() throws MQClientException {
@@ -57,10 +63,16 @@ public class MqProcuder {
                 Integer promoId = (Integer) ((Map)arg).get("promoId");
                 Integer userId = (Integer) ((Map)arg).get("userId");
                 Integer amount = (Integer) ((Map)arg).get("amount");
+                String stockLogId = (String) ((Map)arg).get("stockLogId");
                 try {
-                    orderService.createOrder(userId, itemId, promoId, amount);
+                    orderService.createOrder(userId, itemId, promoId, amount,stockLogId);
+                    System.out.println(" 订单 创建完毕---------------");
                 } catch (BusinessException e) {
                     e.printStackTrace();
+                    // 修改  StockLog  为 失败状态
+                    StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+                    stockLogDO.setStatus(3);
+                    stockLogDOMapper.updateByPrimaryKeySelective(stockLogDO);
                     return LocalTransactionState.ROLLBACK_MESSAGE;
                 }
                 return LocalTransactionState.COMMIT_MESSAGE;
@@ -68,27 +80,42 @@ public class MqProcuder {
 
             @Override
             public LocalTransactionState checkLocalTransaction(MessageExt messageExt) {
-                return null;
+                String jsonString = new String(messageExt.getBody());
+                Map<String,Object> map = JSON.parseObject(jsonString, Map.class);
+                Integer itemId = Integer.valueOf(map.get("itemId").toString());
+                Integer amount = Integer.valueOf(map.get("amount").toString());
+                String stockLogId = (String) (map).get("stockLogId");
+                StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+                if(stockLogDO.getStatus().intValue() == 2){
+                    return LocalTransactionState.COMMIT_MESSAGE;
+                }else if(stockLogDO.getStatus().intValue() == 1){
+                    return LocalTransactionState.UNKNOW;
+                }else{
+                    return LocalTransactionState.ROLLBACK_MESSAGE;
+                }
             }
         });
     }
 
     //  事务型  发送消息
-    public boolean transactionAsyncDecreaseStock(Integer userId, Integer itemId, Integer promoId, Integer amount){
+    public boolean transactionAsyncDecreaseStock(Integer userId, Integer itemId, Integer promoId, Integer amount,String stockLogId){
         Map<String,Object> map = new HashMap<>();
         map.put("itemId",itemId);
         map.put("amount",amount);
+        map.put("stockLogId",stockLogId);
 
         Map<String,Object> argsMap = new HashMap<>();
         argsMap.put("itemId",itemId);
         argsMap.put("amount",amount);
         argsMap.put("userId",userId);
         argsMap.put("promoId",promoId);
+        argsMap.put("stockLogId",stockLogId);
 
         Message message = new Message(mqTopicName,"increase",
                 JSON.toJSON(map).toString().getBytes(Charset.forName("UTF-8")));
         TransactionSendResult sendResult = null;
         try {
+            System.out.println("开始 发送消息---------------------");
             sendResult = transactionMQProducer.sendMessageInTransaction(message,argsMap);
         } catch (MQClientException e) {
             e.printStackTrace();

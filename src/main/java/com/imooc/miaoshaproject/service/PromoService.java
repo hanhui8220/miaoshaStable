@@ -8,4 +8,6 @@ public interface PromoService {
     PromoModel getPromoByItemId(Integer itemId);
 
     void publishPromo(Integer promoId);
+
+    String generateProKillToken(Integer itemId,Integer promoId,Integer userId);
 }

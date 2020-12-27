@@ -1,7 +1,9 @@
 package com.imooc.miaoshaproject.service.impl;
 
 import com.imooc.miaoshaproject.dao.OrderDOMapper;
+import com.imooc.miaoshaproject.dao.StockLogDOMapper;
 import com.imooc.miaoshaproject.dataobject.SequenceDO;
+import com.imooc.miaoshaproject.dataobject.StockLogDO;
 import com.imooc.miaoshaproject.error.BusinessException;
 import com.imooc.miaoshaproject.error.EmBusinessError;
 import com.imooc.miaoshaproject.service.ItemService;
@@ -45,9 +47,12 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Resource
+    private StockLogDOMapper stockLogDOMapper;
+
     @Override
     @Transactional
-    public OrderModel createOrder(Integer userId, Integer itemId, Integer promoId, Integer amount) throws BusinessException {
+    public OrderModel createOrder(Integer userId, Integer itemId, Integer promoId, Integer amount,String stockLogId) throws BusinessException {
         //1.校验下单状态,下单的商品是否存在，用户是否合法，购买数量是否正确
         //ItemModel itemModel = itemService.getItemById(itemId);
         // 改为  从 缓存中 获取商品，减少数据库压力，提高性能
@@ -58,10 +63,10 @@ public class OrderServiceImpl implements OrderService {
 
         // 从缓存获取
         //UserModel userModel = userService.getUserById(userId);
-        UserModel userModel = userService.getUserByIdInCache(userId);
-        if(userModel == null){
-            throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR,"用户信息不存在");
-        }
+//        UserModel userModel = userService.getUserByIdInCache(userId);
+//        if(userModel == null){
+//            throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR,"用户信息不存在");
+//        }
         if(amount <= 0 || amount > 99){
             throw new BusinessException(EmBusinessError.PARAMETER_VALIDATION_ERROR,"数量信息不正确");
         }
@@ -103,6 +108,12 @@ public class OrderServiceImpl implements OrderService {
 
         //加上商品的销量
         itemService.increaseSales(itemId,amount);
+
+        // 修改库存流水  为 交易已完成状态
+        StockLogDO stockLogDO = stockLogDOMapper.selectByPrimaryKey(stockLogId);
+        stockLogDO.setStatus(2);
+        stockLogDOMapper.updateByPrimaryKeySelective(stockLogDO);
+
 
         // 异步更新 数据库库存，等待最近的一次事务提交后才 进行,等待订单提交后才进行
 //        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
